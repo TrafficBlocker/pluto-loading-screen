@@ -40,16 +40,16 @@
 	   Chromium 87+, and Garry's Mod ships whatever CEF build its branch was cut
 	   with. A shorthand the embedded browser cannot parse collapses the element to
 	   nothing, which is indistinguishable from the page not loading at all. */
+	/* The artwork, and nothing on top of it. background-color shows only where the
+	   image cannot reach -- an aspect ratio it does not cover, or the image failing
+	   to load at all. Anything added to background-image here paints OVER the
+	   artwork, because the first layer listed is the topmost one. */
 	#bg {
 		position: fixed;
 		top: 0; right: 0; bottom: 0; left: 0;
 		background-color: #0a0118;
-		background-image:
-			radial-gradient(ellipse at 50% 45%, rgba(124, 58, 237, 0.45) 0%, transparent 55%),
-			radial-gradient(ellipse at 20% 70%, rgba(168, 85, 247, 0.30) 0%, transparent 50%),
-			radial-gradient(ellipse at 80% 30%, rgba(59, 130, 246, 0.20) 0%, transparent 45%),
-			url("background.png");
-		background-size: cover, cover, cover, cover;
+		background-image: url("background.png");
+		background-size: cover;
 		background-position: center;
 		background-repeat: no-repeat;
 	}
