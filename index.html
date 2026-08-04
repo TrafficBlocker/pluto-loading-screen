@@ -14,8 +14,8 @@
 		   never drift apart. */
 		--badge: clamp(46px, 4.2vw, 68px);
 
-		/* Left edge of the bar: past the badge, plus breathing room. */
-		--discord-gutter: calc(2.2vw + var(--badge) + 1.8vw);
+		/* Left edge of the bar: past the badge and the invite text beside it. */
+		--discord-gutter: calc(2.2vw + var(--badge) + 200px);
 
 		/* Right-hand corner reserved for Garry's Mod's own connecting panel, which
 		   starts about 79% across the screen. 24vw clears it with room to spare. */
@@ -152,25 +152,51 @@
 	}
 
 	/* Bottom left, per spec. Sits outside the flex footer so it keeps its corner
-	   regardless of how long the status line runs. */
+	   regardless of how long the status line runs.
+
+	   The invite is spelled out next to the icon because a loading screen cannot be
+	   clicked: ShowURL in lua/menu/loading.lua calls SetMouseInputEnabled(false) on
+	   the panel, so no click ever reaches this page. The anchor is kept for when the
+	   page is opened in a real browser, but the readable text is what actually does
+	   the job in game -- players type it, they cannot follow it. No hover styling
+	   for the same reason: there is no cursor to trigger it. */
 	#discord {
 		position: fixed;
 		left: 2.2vw;
 		bottom: 2.2vh;
-		display: block;
-		width: clamp(46px, 4.2vw, 68px);
-		height: clamp(46px, 4.2vw, 68px);
-		border-radius: 50%;
-		transition: transform 0.18s ease-out, filter 0.18s ease-out;
+		display: flex;
+		align-items: center;
+		text-decoration: none;
 		filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.85));
 	}
 
-	#discord:hover {
-		transform: scale(1.09);
-		filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.9));
+	#discord .icon {
+		width: var(--badge);
+		height: var(--badge);
+		flex: 0 0 auto;
 	}
 
-	#discord svg { display: block; width: 100%; height: 100%; }
+	#discord .icon svg { display: block; width: 100%; height: 100%; }
+
+	#discord .invite {
+		margin-left: 0.75em;
+		font-size: clamp(13px, 1.05vw, 17px);
+		font-weight: 600;
+		letter-spacing: 0.01em;
+		color: rgba(255, 255, 255, 0.92);
+		white-space: nowrap;
+		text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
+	}
+
+	#discord .invite b {
+		display: block;
+		font-size: 0.72em;
+		font-weight: 500;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--void-light);
+		margin-bottom: 0.15em;
+	}
 </style>
 </head>
 <body>
@@ -191,11 +217,14 @@
 
 <!-- Inline rather than an image file so the icon can never 404, and stays sharp
      at any resolution the client happens to be running. -->
-<a id="discord" href="https://discord.gg/XMpUyKDGCs" target="_blank" rel="noopener noreferrer" title="discord.gg/XMpUyKDGCs">
+<a id="discord" href="https://discord.gg/XMpUyKDGCs" target="_blank" rel="noopener noreferrer">
+	<span class="icon">
 	<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 		<circle cx="50" cy="50" r="47" fill="#4c1d95" stroke="#0d0418" stroke-width="2"/>
 		<path fill="#fff" d="M65.7 33.6a37.1 37.1 0 0 0-9.2-2.9 26 26 0 0 0-1.2 2.4 34.5 34.5 0 0 0-10.6 0 25.6 25.6 0 0 0-1.2-2.4 37 37 0 0 0-9.2 2.9C28 42.4 26.5 51 27.2 59.4a37.4 37.4 0 0 0 11.4 5.8c.9-1.3 1.7-2.6 2.4-4a24.2 24.2 0 0 1-3.8-1.8l.9-.7a26.6 26.6 0 0 0 23.1 0l.9.7a24 24 0 0 1-3.8 1.9c.7 1.3 1.5 2.6 2.4 3.9a37.3 37.3 0 0 0 11.4-5.8c.8-9.7-1.6-18.3-6.4-25.8ZM42.2 54.3c-2.2 0-4-2-4-4.6s1.8-4.6 4-4.6 4.1 2.1 4 4.6c0 2.5-1.8 4.6-4 4.6Zm15.6 0c-2.2 0-4-2-4-4.6s1.8-4.6 4-4.6 4.1 2.1 4 4.6c0 2.5-1.8 4.6-4 4.6Z"/>
 	</svg>
+	</span>
+	<span class="invite"><b>Join the Discord</b>discord.gg/XMpUyKDGCs</span>
 </a>
 
 <script>
