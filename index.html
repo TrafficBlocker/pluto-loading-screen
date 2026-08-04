@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Void Eternal</title>
+<style>
+	:root {
+		--void:       #4c1d95;
+		--void-light: #a855f7;
+		--edge:       rgba(168, 85, 247, 0.35);
+
+		/* Size of the Discord badge in the bottom-left corner. Referenced by both the
+		   badge itself and the gutter that keeps the bar clear of it, so the two can
+		   never drift apart. */
+		--badge: clamp(46px, 4.2vw, 68px);
+
+		/* Left edge of the bar: past the badge, plus breathing room. */
+		--discord-gutter: calc(2.2vw + var(--badge) + 1.8vw);
+
+		/* Right-hand corner reserved for Garry's Mod's own connecting panel, which
+		   starts about 79% across the screen. 24vw clears it with room to spare. */
+		--gmod-gutter: 24vw;
+	}
+
+	* { margin: 0; padding: 0; box-sizing: border-box; }
+
+	html, body {
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+		background: #05010d;
+		color: #fff;
+		font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+		-webkit-font-smoothing: antialiased;
+		cursor: default;
+		user-select: none;
+	}
+
+	/* The banner sits underneath everything. The gradient behind it is not just a
+	   fallback for a missing file -- it also fills the edges on aspect ratios the
+	   banner does not cover, so the screen never shows bare black bars. */
+	/* Explicit offsets rather than the `inset` shorthand throughout: inset needs
+	   Chromium 87+, and Garry's Mod ships whatever CEF build its branch was cut
+	   with. A shorthand the embedded browser cannot parse collapses the element to
+	   nothing, which is indistinguishable from the page not loading at all. */
+	#bg {
+		position: fixed;
+		top: 0; right: 0; bottom: 0; left: 0;
+		background-color: #0a0118;
+		background-image:
+			radial-gradient(ellipse at 50% 45%, rgba(124, 58, 237, 0.45) 0%, transparent 55%),
+			radial-gradient(ellipse at 20% 70%, rgba(168, 85, 247, 0.30) 0%, transparent 50%),
+			radial-gradient(ellipse at 80% 30%, rgba(59, 130, 246, 0.20) 0%, transparent 45%),
+			url("background.png");
+		background-size: cover, cover, cover, cover;
+		background-position: center;
+		background-repeat: no-repeat;
+	}
+
+	/* Darkens the foot of the screen so the status line reads over the nebula, and
+	   leaves the middle clear for the logo baked into the artwork. */
+	#scrim {
+		position: fixed;
+		top: 0; right: 0; bottom: 0; left: 0;
+		background:
+			linear-gradient(to bottom, transparent 55%, rgba(5, 1, 13, 0.55) 78%, rgba(5, 1, 13, 0.88) 100%),
+			radial-gradient(ellipse at center, transparent 45%, rgba(5, 1, 13, 0.45) 100%);
+	}
+
+	/* Bottom strip, threaded between the two things that would otherwise sit on it:
+	   the Discord badge in the left corner, and Garry's Mod's own connecting panel
+	   in the right. The left padding clears the badge; --gmod-gutter reserves the
+	   right-hand corner. Adjust that one value once the panel's width is known. */
+	#layout {
+		position: relative;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		padding: 0 var(--gmod-gutter) 3.4vh var(--discord-gutter);
+	}
+
+	#meta {
+		font-size: clamp(12px, 1.15vw, 17px);
+		color: rgba(255, 255, 255, 0.62);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		margin-bottom: 2.2vh;
+		min-height: 1.2em;
+	}
+
+	#meta span { color: var(--void-light); }
+
+	#meta i {
+		font-style: normal;
+		color: rgba(255, 255, 255, 0.25);
+		padding: 0 0.7em;
+	}
+
+	#bar {
+		position: relative;
+		height: 6px;
+		border-radius: 3px;
+		background: rgba(255, 255, 255, 0.10);
+		overflow: hidden;
+		box-shadow: 0 0 0 1px var(--edge);
+	}
+
+	#fill {
+		position: absolute;
+		top: 0; bottom: 0; left: 0;
+		width: 0%;
+		border-radius: 3px;
+		background: linear-gradient(90deg, var(--void) 0%, var(--void-light) 100%);
+		box-shadow: 0 0 18px rgba(168, 85, 247, 0.85);
+		transition: width 0.25s ease-out;
+	}
+
+	/* Indeterminate sweep, shown until the server tells us a file count. */
+	#bar.pending #fill {
+		width: 30%;
+		animation: sweep 1.5s ease-in-out infinite;
+	}
+
+	@keyframes sweep {
+		0%   { left: -30%; }
+		100% { left: 100%; }
+	}
+
+	#footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: 1.4vh;
+		min-height: 3.2em;
+	}
+
+	#status {
+		font-size: clamp(11px, 1.05vw, 15px);
+		color: rgba(255, 255, 255, 0.55);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		padding-right: 2em;
+		flex: 1;
+	}
+
+	#pct {
+		font-size: clamp(11px, 1.05vw, 15px);
+		color: var(--void-light);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Bottom left, per spec. Sits outside the flex footer so it keeps its corner
+	   regardless of how long the status line runs. */
+	#discord {
+		position: fixed;
+		left: 2.2vw;
+		bottom: 2.2vh;
+		display: block;
+		width: clamp(46px, 4.2vw, 68px);
+		height: clamp(46px, 4.2vw, 68px);
+		border-radius: 50%;
+		transition: transform 0.18s ease-out, filter 0.18s ease-out;
+		filter: drop-shadow(0 0 14px rgba(0, 0, 0, 0.85));
+	}
+
+	#discord:hover {
+		transform: scale(1.09);
+		filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.9));
+	}
+
+	#discord svg { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="scrim"></div>
+
+<div id="layout">
+	<div id="meta"></div>
+
+	<div id="bar" class="pending"><div id="fill"></div></div>
+
+	<div id="footer">
+		<div id="status">Connecting&hellip;</div>
+		<div id="pct"></div>
+	</div>
+</div>
+
+<!-- Inline rather than an image file so the icon can never 404, and stays sharp
+     at any resolution the client happens to be running. -->
+<a id="discord" href="https://discord.gg/XMpUyKDGCs" target="_blank" rel="noopener noreferrer" title="discord.gg/XMpUyKDGCs">
+	<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+		<circle cx="50" cy="50" r="47" fill="#4c1d95" stroke="#0d0418" stroke-width="2"/>
+		<path fill="#fff" d="M65.7 33.6a37.1 37.1 0 0 0-9.2-2.9 26 26 0 0 0-1.2 2.4 34.5 34.5 0 0 0-10.6 0 25.6 25.6 0 0 0-1.2-2.4 37 37 0 0 0-9.2 2.9C28 42.4 26.5 51 27.2 59.4a37.4 37.4 0 0 0 11.4 5.8c.9-1.3 1.7-2.6 2.4-4a24.2 24.2 0 0 1-3.8-1.8l.9-.7a26.6 26.6 0 0 0 23.1 0l.9.7a24 24 0 0 1-3.8 1.9c.7 1.3 1.5 2.6 2.4 3.9a37.3 37.3 0 0 0 11.4-5.8c.8-9.7-1.6-18.3-6.4-25.8ZM42.2 54.3c-2.2 0-4-2-4-4.6s1.8-4.6 4-4.6 4.1 2.1 4 4.6c0 2.5-1.8 4.6-4 4.6Zm15.6 0c-2.2 0-4-2-4-4.6s1.8-4.6 4-4.6 4.1 2.1 4 4.6c0 2.5-1.8 4.6-4 4.6Z"/>
+	</svg>
+</a>
+
+<script>
+(function () {
+	"use strict";
+
+	var bar    = document.getElementById("bar");
+	var fill   = document.getElementById("fill");
+	var status = document.getElementById("status");
+	var pct    = document.getElementById("pct");
+	var meta   = document.getElementById("meta");
+
+	var total  = 0;
+	var needed = 0;
+
+	function esc(s) {
+		return String(s).replace(/[&<>"']/g, function (c) {
+			return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c];
+		});
+	}
+
+	function setMeta(map, mode, max) {
+		var out = [];
+		if (map)  out.push("<span>" + esc(map) + "</span>");
+		if (mode) out.push(esc(mode));
+		if (max)  out.push(esc(max) + " slots");
+		meta.innerHTML = out.join("<i>/</i>");
+	}
+
+	function render() {
+		if (!total) {
+			bar.className = "pending";
+			pct.textContent = "";
+			return;
+		}
+
+		bar.className = "";
+
+		var done = Math.max(0, total - needed);
+		var p    = Math.min(100, Math.round((done / total) * 100));
+
+		fill.style.width = p + "%";
+		pct.textContent  = p + "%  ยท  " + done + " / " + total;
+	}
+
+	// Garry's Mod passes these on the query string when it opens the page.
+	(function fromQuery() {
+		var q = {};
+
+		location.search.replace(/^\?/, "").split("&").forEach(function (pair) {
+			if (!pair) return;
+			var kv = pair.split("=");
+			q[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || "").replace(/\+/g, " "));
+		});
+
+		setMeta(q.mapname, q.gamemode, q.maxplayers);
+	})();
+
+	// Garry's Mod calls these directly on the page as the load progresses.
+	// Names and signatures are fixed by the engine -- do not rename.
+	// Signature comes from lua/menu/loading.lua, which calls this with nine
+	// arguments. niceGamemode is the readable title ("Trouble in Terrorist Town
+	// Rewrite") where gamemode is the folder name ("terrortown_modded"), so prefer
+	// it and fall back if it is ever empty. servername is deliberately unused --
+	// the artwork already carries the branding.
+	window.GameDetails = function (servername, serverurl, mapname, maxplayers, steamid, gamemode, musicvolume, language, niceGamemode) {
+		setMeta(mapname, niceGamemode || gamemode, maxplayers);
+	};
+
+	window.SetFilesTotal = function (n) {
+		total = parseInt(n, 10) || 0;
+		render();
+	};
+
+	window.SetFilesNeeded = function (n) {
+		needed = parseInt(n, 10) || 0;
+		render();
+	};
+
+	window.DownloadingFile = function (name) {
+		status.textContent = "Downloading  " + String(name).split(/[\\/]/).pop();
+	};
+
+	window.SetStatusChanged = function (text) {
+		status.textContent = text;
+	};
+})();
+</script>
+
+</body>
+</html>
