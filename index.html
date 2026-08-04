@@ -9,11 +9,14 @@
 		--void-light: #a855f7;
 		--edge:       rgba(168, 85, 247, 0.35);
 
+		/* Size of the Discord badge in the bottom-left corner. The bar clears it
+		   vertically now rather than horizontally, so the two can never collide
+		   however long the invite text beside it runs. */
 		--badge: clamp(46px, 4.2vw, 68px);
 
-		--discord-gutter: calc(2.2vw + var(--badge) + 200px);
-
-		--gmod-gutter: 24vw;
+		/* Enough shadow to hold text against the brightest part of the nebula. Does
+		   the job a dimming layer used to, without veiling the artwork. */
+		--halo: 0 2px 4px rgba(0,0,0,0.95), 0 0 18px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.7);
 	}
 
 	* { margin: 0; padding: 0; box-sizing: border-box; }
@@ -30,6 +33,13 @@
 		user-select: none;
 	}
 
+	/* The banner sits underneath everything. The gradient behind it is not just a
+	   fallback for a missing file -- it also fills the edges on aspect ratios the
+	   banner does not cover, so the screen never shows bare black bars. */
+	/* Explicit offsets rather than the `inset` shorthand throughout: inset needs
+	   Chromium 87+, and Garry's Mod ships whatever CEF build its branch was cut
+	   with. A shorthand the embedded browser cannot parse collapses the element to
+	   nothing, which is indistinguishable from the page not loading at all. */
 	#bg {
 		position: fixed;
 		top: 0; right: 0; bottom: 0; left: 0;
@@ -44,30 +54,30 @@
 		background-repeat: no-repeat;
 	}
 
-	#scrim {
-		position: fixed;
-		top: 0; right: 0; bottom: 0; left: 0;
-		background:
-			linear-gradient(to bottom, transparent 55%, rgba(5, 1, 13, 0.55) 78%, rgba(5, 1, 13, 0.88) 100%),
-			radial-gradient(ellipse at center, transparent 45%, rgba(5, 1, 13, 0.45) 100%);
-	}
+	/* No dimming layer. The artwork carries the screen, and text-shadow holds the
+	   few bits of text against it without fogging the whole thing.
 
+	   Raised clear of both things that live along the bottom edge -- the Discord
+	   badge on the left, Garry's Mod's own connecting panel on the right -- so the
+	   bar can run the full width with even margins instead of being squeezed into
+	   the gap between them. */
 	#layout {
 		position: relative;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-end;
-		padding: 0 var(--gmod-gutter) 3.4vh var(--discord-gutter);
+		padding: 0 4vw calc(2.2vh + var(--badge) + 3vh);
 	}
 
 	#meta {
 		font-size: clamp(12px, 1.15vw, 17px);
-		color: rgba(255, 255, 255, 0.62);
+		color: rgba(255, 255, 255, 0.85);
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		margin-bottom: 2.2vh;
 		min-height: 1.2em;
+		text-shadow: var(--halo);
 	}
 
 	#meta span { color: var(--void-light); }
@@ -78,13 +88,16 @@
 		padding: 0 0.7em;
 	}
 
+	/* Dark track rather than a translucent white one. Without the dimming layer the
+	   bar sits directly on the brightest part of the nebula, where a light track
+	   simply disappears. */
 	#bar {
 		position: relative;
 		height: 6px;
 		border-radius: 3px;
-		background: rgba(255, 255, 255, 0.10);
+		background: rgba(0, 0, 0, 0.55);
 		overflow: hidden;
-		box-shadow: 0 0 0 1px var(--edge);
+		box-shadow: 0 0 0 1px var(--edge), 0 2px 16px rgba(0, 0, 0, 0.8);
 	}
 
 	#fill {
@@ -112,26 +125,36 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-top: 1.4vh;
-		min-height: 3.2em;
+		margin-top: 1.2vh;
 	}
 
 	#status {
 		font-size: clamp(11px, 1.05vw, 15px);
-		color: rgba(255, 255, 255, 0.55);
+		color: rgba(255, 255, 255, 0.8);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		padding-right: 2em;
 		flex: 1;
+		text-shadow: var(--halo);
 	}
 
 	#pct {
 		font-size: clamp(11px, 1.05vw, 15px);
 		color: var(--void-light);
 		font-variant-numeric: tabular-nums;
+		text-shadow: var(--halo);
 	}
 
+	/* Bottom left, per spec. Sits outside the flex footer so it keeps its corner
+	   regardless of how long the status line runs.
+
+	   The invite is spelled out next to the icon because a loading screen cannot be
+	   clicked: ShowURL in lua/menu/loading.lua calls SetMouseInputEnabled(false) on
+	   the panel, so no click ever reaches this page. The anchor is kept for when the
+	   page is opened in a real browser, but the readable text is what actually does
+	   the job in game -- players type it, they cannot follow it. No hover styling
+	   for the same reason: there is no cursor to trigger it. */
 	#discord {
 		position: fixed;
 		left: 2.2vw;
@@ -157,7 +180,7 @@
 		letter-spacing: 0.01em;
 		color: rgba(255, 255, 255, 0.92);
 		white-space: nowrap;
-		text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
+		text-shadow: var(--halo);
 	}
 
 	#discord .invite b {
@@ -174,7 +197,6 @@
 <body>
 
 <div id="bg"></div>
-<div id="scrim"></div>
 
 <div id="layout">
 	<div id="meta"></div>
@@ -187,6 +209,8 @@
 	</div>
 </div>
 
+<!-- Inline rather than an image file so the icon can never 404, and stays sharp
+     at any resolution the client happens to be running. -->
 <a id="discord" href="https://discord.gg/XMpUyKDGCs" target="_blank" rel="noopener noreferrer">
 	<span class="icon">
 	<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -240,6 +264,7 @@
 		pct.textContent  = p + "%  ยท  " + done + " / " + total;
 	}
 
+	// Garry's Mod passes these on the query string when it opens the page.
 	(function fromQuery() {
 		var q = {};
 
@@ -252,6 +277,13 @@
 		setMeta(q.mapname, q.gamemode, q.maxplayers);
 	})();
 
+	// Garry's Mod calls these directly on the page as the load progresses.
+	// Names and signatures are fixed by the engine -- do not rename.
+	// Signature comes from lua/menu/loading.lua, which calls this with nine
+	// arguments. niceGamemode is the readable title ("Trouble in Terrorist Town
+	// Rewrite") where gamemode is the folder name ("terrortown_modded"), so prefer
+	// it and fall back if it is ever empty. servername is deliberately unused --
+	// the artwork already carries the branding.
 	window.GameDetails = function (servername, serverurl, mapname, maxplayers, steamid, gamemode, musicvolume, language, niceGamemode) {
 		setMeta(mapname, niceGamemode || gamemode, maxplayers);
 	};
